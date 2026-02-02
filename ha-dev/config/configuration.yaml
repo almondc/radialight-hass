@@ -1,0 +1,11 @@
+# DEV INSTANCE ONLY: Local Home Assistant dev/test config
+# This configuration is isolated and should NOT be used in production.
+
+homeassistant:
+  name: Home Assistant Dev
+  time_zone: Europe/London
+
+logger:
+  default: info
+  logs:
+    custom_components.radialight_cloud: debug

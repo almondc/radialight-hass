@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "radialight_energy_total",
+  "data": {
+    "accumulated_total_kwh": 0.195,
+    "last_seen_usage_timestamp_utc": "2026-02-02T17:00:00+00:00"
+  }
+}

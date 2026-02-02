@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ha-dev
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "8124:8123"
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ./config:/config
