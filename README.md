@@ -1,8 +1,11 @@
 # Radialight Cloud Home Assistant Integration
 
-This is a custom Home Assistant integration to control [Radialight ICON radiators](https://www.radialight.it/) via the cloud API.
+![HACS Supported](https://img.shields.io/badge/HACS-supported-success)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Cloud-based integration:** This integration depends on Radialight’s cloud API and requires internet connectivity.
+A Home Assistant custom integration to control [Radialight ICON radiators](https://www.radialight.it/) via the cloud API.
+
+> **Cloud-based integration:** This integration depends on Radialight's cloud API and requires internet connectivity.
 
 ## Features
 
@@ -13,6 +16,7 @@ This is a custom Home Assistant integration to control [Radialight ICON radiator
 - **Real-Time Monitoring**: Current and target temperature display
 - **Product Monitoring**: View connected radiator status and detected temperatures
 - **Preset Modes**: program / comfort / eco
+- **Energy Monitoring**: kWh sensors for Energy Dashboard integration
 - **Diagnostics**: Built-in diagnostics (sanitized)
 
 ## Installation

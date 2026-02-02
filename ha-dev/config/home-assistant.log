@@ -157,3 +157,15 @@ Dependencies: {'trace', 'image_upload', 'blueprint'}; already set up: {'device_a
 2026-02-02 17:35:35.818 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched usage; 24 points
 2026-02-02 17:35:35.819 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Processed 1 new usage points, added 0.070 kWh, total now 0.195 kWh
 2026-02-02 17:35:35.822 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Finished fetching Radialight Cloud data in 4.128 seconds (success: True)
+2026-02-02 17:36:44.649 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched zones in 8.96s: ['b314e563-28dd-4f04-bfcd-245d2c35b437', '6afc61ce-e833-460e-b0a7-1e7d188cb293'] (2 products)
+2026-02-02 17:36:44.729 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched usage; 24 points
+2026-02-02 17:36:44.729 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] No new usage points to process
+2026-02-02 17:36:44.730 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Finished fetching Radialight Cloud data in 9.041 seconds (success: True)
+2026-02-02 17:37:46.637 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched zones in 1.94s: ['b314e563-28dd-4f04-bfcd-245d2c35b437', '6afc61ce-e833-460e-b0a7-1e7d188cb293'] (2 products)
+2026-02-02 17:37:46.717 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched usage; 24 points
+2026-02-02 17:37:46.718 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] No new usage points to process
+2026-02-02 17:37:46.718 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Finished fetching Radialight Cloud data in 2.021 seconds (success: True)
+2026-02-02 17:38:52.223 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched zones in 5.53s: ['b314e563-28dd-4f04-bfcd-245d2c35b437', '6afc61ce-e833-460e-b0a7-1e7d188cb293'] (2 products)
+2026-02-02 17:38:52.313 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Successfully fetched usage; 24 points
+2026-02-02 17:38:52.314 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] No new usage points to process
+2026-02-02 17:38:52.314 DEBUG (MainThread) [custom_components.radialight_cloud.coordinator] Finished fetching Radialight Cloud data in 5.625 seconds (success: True)
