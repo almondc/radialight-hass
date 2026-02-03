@@ -1,10 +1,6 @@
 {
   "name": "Radialight Cloud",
-  "description": "Home Assistant integration for Radialight ICON radiators and climate control",
   "content_in_root": false,
   "homeassistant": "2024.6.0",
-  "iot_class": "cloud_polling",
-  "render_readme": true,
-  "topics": ["climate", "energy", "heating", "radialight", "radiator"],
-  "requirements": []
+  "render_readme": true
 }
