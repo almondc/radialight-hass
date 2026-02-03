@@ -128,7 +128,31 @@ The climate entity exposes these attributes:
   - `is_warming`: Whether radiator is actively heating
   - `is_in_override`: Whether radiator is in override mode
 
-## Sensors
+## Entities & Controls
+
+### Switches (LED Control)
+
+Each radiator has an LED control switch:
+- **Entity**: `switch.{product_name}_led`
+- **Purpose**: Control the indicator LED brightness on the radiator
+- **State**: On/Off reflects the LED status
+- **Availability**: Switch unavailable if radiator is offline
+
+### Binary Sensors (Product Status)
+
+Each radiator has four binary sensors:
+- **Warming** (`{product_name} Warming`): Indicates if radiator is actively heating
+- **Offline** (`{product_name} Offline`): Indicates if radiator is offline or unreachable
+- **In Override** (`{product_name} In Override`): Indicates if radiator has an active override
+- **LED** (`{product_name} LED`): Reflects the current LED on/off state
+
+All product entities are **enabled by default** and can be disabled via integration options if not needed.
+
+### Temperature Sensors (Product Level)
+
+Each radiator exposes:
+- **Temperature** (`{product_name} Temperature`): Current detected temperature in °C
+- **Availability**: Unavailable if radiator is offline
 
 ### Zone-Level Sensors
 Zone-level sensors are provided:
@@ -213,11 +237,25 @@ The integration uses the **Firebase Secure Token refresh flow**:
 
 Diagnostics are available via Home Assistant’s diagnostics panel and include sanitized zone data, polling interval, and coordinator status. Tokens and API keys are always redacted.
 
-## Limitations & Future Work
+## Limitations & Important Warnings
 
-- **Schedules (Program WeekPlans)**: Not yet editable via Home Assistant
-- **Per-Radiator Entities**: Not exposed individually (future enhancement may add them as sensors)
-- **Mode Interpretation**: The `mode` and `infoMode` fields are numeric; their meanings are not yet fully mapped
+⚠️ **Cloud-Based Integration**: This integration relies on Radialight's cloud API. If their service is unavailable, the integration cannot function. All data is transmitted through their servers.
+
+⚠️ **Polling-Based Updates**: The integration fetches data every 60 seconds (configurable). This is not real-time control. There will be a delay between your action and when it takes effect.
+
+⚠️ **API May Change**: The Radialight API is not officially documented. The underlying API may change without notice, which could break this integration. If the integration stops working, it may require an update.
+
+⚠️ **Data Accuracy**: Energy values are calculated from API data and may not exactly match official Radialight app statistics due to rounding or data availability differences.
+
+### Known Limitations
+
+- **Schedules (WeekPlans)**: Program schedules are not editable via Home Assistant
+- **Mode Interpretation**: The `mode` and `infoMode` fields are numeric; their exact meanings are not fully mapped
+- **Per-Radiator Climate Entities**: Each zone has one climate entity (not per radiator)
+
+## Documentation Policy
+
+**This README is the single source of truth for user-facing documentation.** All future documentation updates must extend this file. Do not create additional .md files in the repository.
 
 ## Troubleshooting
 

@@ -1,12 +1,12 @@
 {
   "domain": "radialight_cloud",
   "name": "Radialight Cloud",
-  "codeowners": ["@YOUR_GITHUB_USERNAME"],
+  "codeowners": ["@almondc"],
   "config_flow": true,
   "diagnostics": true,
-  "documentation": "https://github.com/YOUR_GITHUB_USERNAME/radialight-hass",
+  "documentation": "https://github.com/almondc/radialight-hass",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/YOUR_GITHUB_USERNAME/radialight-hass/issues",
+  "issue_tracker": "https://github.com/almondc/radialight-hass/issues",
   "platforms": ["climate", "sensor", "binary_sensor", "switch"],
   "requirements": ["aiohttp>=3.8.0"],
   "version": "0.2.0"
