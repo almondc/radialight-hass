@@ -263,13 +263,14 @@ class RadialightAPIClient:
         )
 
     async def get_usage(
-        self, period: str = "day", comparison: int = 0
+        self, period: str = "day", comparison: int = 0, zone_id: Optional[str] = None
     ) -> dict:
         """Fetch usage data.
 
         Args:
             period: Period for usage data (e.g. "day", "month").
             comparison: Comparison mode (0 = no comparison).
+            zone_id: Optional zone ID to fetch usage for a specific zone.
 
         Returns:
             API response with "values" and "comparisonValues" keys.
@@ -277,7 +278,17 @@ class RadialightAPIClient:
         Raises:
             RadialightError: If request fails.
         """
-        endpoint = f"/usage?comparison={comparison}&period={period}"
+        # Build query params safely
+        params = {
+            "comparison": comparison,
+            "period": period,
+        }
+        if zone_id:
+            params["zone"] = zone_id
+        
+        # Build endpoint with params
+        param_str = "&".join(f"{k}={v}" for k, v in params.items())
+        endpoint = f"/usage?{param_str}"
         return await self._request("GET", endpoint)
 
     async def async_set_product_light(self, product_id: str, on: bool) -> dict | None:

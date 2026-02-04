@@ -275,8 +275,25 @@ Diagnostics are available via Home Assistant’s diagnostics panel and include s
 ## API Endpoints Used
 
 - `GET /zones`: Fetch all zones and their radiators
+- `GET /usage?period=day&comparison=0`: Fetch account-level hourly usage
+- `GET /usage?period=day&comparison=0&zone=<zone_id>`: Fetch per-zone hourly usage (each zone requires one call)
 - `POST /zone/<zone_id>`: Update zone setpoint and configuration
 - `POST https://securetoken.googleapis.com/v1/token`: Firebase token refresh
+
+### Per-Zone Usage Fetching
+
+The integration fetches energy usage separately for each zone using the zone query parameter:
+```
+GET https://myradialight-fe-prod.opengate.it/usage?comparison=0&period=day&zone=<zone_id>
+```
+
+This means:
+- If you have N zones, the integration makes N+1 calls to the /usage endpoint per polling cycle (one per zone + one for account total)
+- With default polling interval (60 seconds), this is approximately 1 call per second per zone in steady state
+- Per-zone energy sensors show monotonic totals for that specific zone only
+- Rolling 24-hour usage windows are calculated independently per zone using UTC cutoff
+
+**Important:** Previously, all zones showed identical usage values because the same account-level endpoint was used. Now each zone's sensors use that zone's specific hourly usage data.
 
 ## Support
 

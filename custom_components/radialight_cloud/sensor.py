@@ -637,6 +637,103 @@ class ZoneUsageYesterdaySensor(BaseCoordinatorSensor):
         return round(_wh_to_kwh(value), 2)
 
 
+class ZoneEnergyTotalSensor(BaseCoordinatorSensor):
+    """Zone monotonic total energy sensor (for Energy dashboard)."""
+
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
+        super().__init__(coordinator, zone_id, zone)
+        self._attr_name = f"{zone.get('name', 'Zone')} Energy Total"
+        self._attr_unique_id = f"{zone_id}_energy_total"
+
+    async def async_added_to_hass(self) -> None:
+        """Log metadata when entity is added."""
+        await super().async_added_to_hass()
+        _LOGGER.debug(
+            "Zone energy sensor registered: entity_id=%s, unique_id=%s, device_class=%s, unit=%s, state_class=%s",
+            self.entity_id,
+            self.unique_id,
+            self.device_class,
+            self.native_unit_of_measurement,
+            self.state_class,
+        )
+
+    @property
+    def native_value(self) -> Optional[float]:
+        if not self.coordinator.data:
+            return None
+        zone_energy_totals = self.coordinator.data.get("zone_energy_totals", {})
+        zone_data = zone_energy_totals.get(self._zone_id)
+        if zone_data is None:
+            return None
+        value = zone_data.get("total_kwh")
+        return round(value, 2) if value is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if not self.coordinator.data:
+            return {}
+        zone_energy_totals = self.coordinator.data.get("zone_energy_totals", {})
+        zone_data = zone_energy_totals.get(self._zone_id)
+        if zone_data is None:
+            return {}
+        last_ts = zone_data.get("last_ts")
+        return {
+            "last_seen_timestamp": last_ts.isoformat() if isinstance(last_ts, type(dt_util.utcnow())) else last_ts,
+        }
+
+
+class ZoneUsageLast24hSensor(BaseCoordinatorSensor):
+    """Zone usage for the last 24 hours (rolling window) in kWh."""
+
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
+        super().__init__(coordinator, zone_id, zone)
+        self._attr_name = f"{zone.get('name', 'Zone')} Usage Last 24h"
+        self._attr_unique_id = f"{zone_id}_usage_last_24h"
+
+    async def async_added_to_hass(self) -> None:
+        """Log metadata when entity is added."""
+        await super().async_added_to_hass()
+        _LOGGER.debug(
+            "Zone usage 24h sensor registered: entity_id=%s, unique_id=%s, device_class=%s, unit=%s, state_class=%s",
+            self.entity_id,
+            self.unique_id,
+            self.device_class,
+            self.native_unit_of_measurement,
+            self.state_class,
+        )
+
+    @property
+    def native_value(self) -> Optional[float]:
+        if not self.coordinator.data:
+            return None
+        
+        zone_usage_rolling_24h = self.coordinator.data.get("zone_usage_rolling_24h_kwh", {}).get(self._zone_id)
+        return round(zone_usage_rolling_24h, 2) if zone_usage_rolling_24h is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if not self.coordinator.data:
+            return {}
+        
+        zone_usage_data = self.coordinator.data.get("usage_by_zone", {}).get(self._zone_id)
+        if not zone_usage_data or not zone_usage_data.get("points"):
+            return {}
+        
+        usage_points = zone_usage_data["points"]
+        return {
+            "point_count": len(usage_points),
+            "latest_ts": zone_usage_data.get("latest_ts").isoformat() if zone_usage_data.get("latest_ts") else None,
+            "last_48_hours": _format_last_n_points(usage_points, 48),
+        }
+
+
 class ProductTemperatureSensor(CoordinatorEntity[RadialightCoordinator], SensorEntity):
     """Product temperature sensor (optional)."""
 
@@ -704,6 +801,8 @@ def _build_zone_sensors(
         ZoneEcoTemperatureSensor(coordinator, zone_id, zone),
         ZoneComfortTemperatureSensor(coordinator, zone_id, zone),
         ZoneAlertCountSensor(coordinator, zone_id, zone),
+        ZoneEnergyTotalSensor(coordinator, zone_id, zone),
+        ZoneUsageLast24hSensor(coordinator, zone_id, zone),
         ZoneUsageTotalSensor(coordinator, zone_id, zone),
         ZoneUsageTodaySensor(coordinator, zone_id, zone),
         ZoneUsageYesterdaySensor(coordinator, zone_id, zone),
