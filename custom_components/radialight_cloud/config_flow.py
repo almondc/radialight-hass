@@ -22,6 +22,8 @@ from .const import (
     DEFAULT_ENABLE_PRODUCT_ENTITIES,
     CONF_ENABLE_USAGE_SENSORS,
     DEFAULT_ENABLE_USAGE_SENSORS,
+    CONF_SHOW_ADVANCED_ENTITIES,
+    DEFAULT_SHOW_ADVANCED_ENTITIES,
     CONF_USAGE_SCALE,
     DEFAULT_USAGE_SCALE,
     USAGE_SCALE_RAW,
@@ -149,6 +151,9 @@ class RadialightCloudOptionsFlow(OptionsFlow):
         enable_usage_sensors = self.config_entry.options.get(
             CONF_ENABLE_USAGE_SENSORS, DEFAULT_ENABLE_USAGE_SENSORS
         )
+        show_advanced_entities = self.config_entry.options.get(
+            CONF_SHOW_ADVANCED_ENTITIES, DEFAULT_SHOW_ADVANCED_ENTITIES
+        )
         usage_scale = self.config_entry.options.get(
             CONF_USAGE_SCALE, DEFAULT_USAGE_SCALE
         )
@@ -166,6 +171,10 @@ class RadialightCloudOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_ENABLE_USAGE_SENSORS,
                     default=enable_usage_sensors,
+                ): bool,
+                vol.Optional(
+                    CONF_SHOW_ADVANCED_ENTITIES,
+                    default=show_advanced_entities,
                 ): bool,
                 vol.Optional(
                     CONF_USAGE_SCALE,

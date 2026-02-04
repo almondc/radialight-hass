@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+import logging
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -15,6 +17,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import RadialightCoordinator
 from .const import DOMAIN, DATA_COORDINATOR, CONF_ENABLE_PRODUCT_ENTITIES
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -64,6 +68,17 @@ class BaseCoordinatorBinarySensor(
             name=zone.get("name", f"Zone {self._zone_id}"),
             manufacturer="Radialight",
             model="ICON Zone",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Log entity registration details."""
+        await super().async_added_to_hass()
+        _LOGGER.debug(
+            "ADDED %s unique_id=%s class=%s enabled_default=%s",
+            self.entity_id,
+            self.unique_id,
+            self.__class__.__name__,
+            self.entity_registry_enabled_default,
         )
 
 
@@ -162,8 +177,6 @@ class ProductBinarySensor(
         self._attr_unique_id = f"{self._product_id}_{key}"
         if device_class:
             self._attr_device_class = device_class
-        if key == "isInOverride":
-            self._attr_entity_registry_enabled_default = False
 
     @property
     def available(self) -> bool:

@@ -27,6 +27,8 @@ from .const import (
     DATA_COORDINATOR,
     CONF_ENABLE_PRODUCT_ENTITIES,
     CONF_ENABLE_USAGE_SENSORS,
+    CONF_SHOW_ADVANCED_ENTITIES,
+    DEFAULT_SHOW_ADVANCED_ENTITIES,
     CONF_USAGE_SCALE,
     DEFAULT_USAGE_SCALE,
     USAGE_SCALE_RAW,
@@ -50,6 +52,7 @@ async def async_setup_entry(
     coordinator: RadialightCoordinator = data[DATA_COORDINATOR]
     enable_product_entities = data.get(CONF_ENABLE_PRODUCT_ENTITIES, False)
     enable_usage_sensors = data.get(CONF_ENABLE_USAGE_SENSORS, True)
+    show_advanced_entities = data.get(CONF_SHOW_ADVANCED_ENTITIES, DEFAULT_SHOW_ADVANCED_ENTITIES)
     usage_scale = data.get(CONF_USAGE_SCALE, DEFAULT_USAGE_SCALE)
 
     entities: list[SensorEntity] = []
@@ -64,7 +67,11 @@ async def async_setup_entry(
 
     # Add zone sensors
     for zone_id, zone in coordinator.get_zones_by_id().items():
-        entities.extend(_build_zone_sensors(coordinator, zone_id, zone))
+        entities.extend(
+            _build_zone_sensors(
+                coordinator, zone_id, zone, show_advanced_entities
+            )
+        )
 
         if enable_product_entities:
             for product in zone.get("products", []):
@@ -307,6 +314,17 @@ class BaseCoordinatorSensor(CoordinatorEntity[RadialightCoordinator], SensorEnti
             name=zone.get("name", f"Zone {self._zone_id}"),
             manufacturer="Radialight",
             model="ICON Zone",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Log entity registration details."""
+        await super().async_added_to_hass()
+        _LOGGER.debug(
+            "ADDED %s unique_id=%s class=%s enabled_default=%s",
+            self.entity_id,
+            self.unique_id,
+            self.__class__.__name__,
+            self.entity_registry_enabled_default,
         )
 
 class ZoneAverageTemperatureSensor(BaseCoordinatorSensor):
@@ -797,9 +815,23 @@ class ProductTemperatureSensor(CoordinatorEntity[RadialightCoordinator], SensorE
 
 
 def _build_zone_sensors(
-    coordinator: RadialightCoordinator, zone_id: str, zone: dict
+    coordinator: RadialightCoordinator,
+    zone_id: str,
+    zone: dict,
+    show_advanced_entities: bool = False,
 ) -> list[SensorEntity]:
-    return [
+    """Build zone sensors.
+    
+    Args:
+        coordinator: The data coordinator.
+        zone_id: The zone ID.
+        zone: The zone data.
+        show_advanced_entities: Whether to include advanced/redundant energy sensors.
+    
+    Returns:
+        List of sensor entities for the zone.
+    """
+    sensors = [
         ZoneAverageTemperatureSensor(coordinator, zone_id, zone),
         ZoneMinTemperatureSensor(coordinator, zone_id, zone),
         ZoneMaxTemperatureSensor(coordinator, zone_id, zone),
@@ -813,12 +845,20 @@ def _build_zone_sensors(
         ZoneEcoTemperatureSensor(coordinator, zone_id, zone),
         ZoneComfortTemperatureSensor(coordinator, zone_id, zone),
         ZoneAlertCountSensor(coordinator, zone_id, zone),
+        # Essential energy sensors (always included)
         ZoneEnergyTotalSensor(coordinator, zone_id, zone),
         ZoneUsageLast24hSensor(coordinator, zone_id, zone),
-        ZoneUsageTotalSensor(coordinator, zone_id, zone),
-        ZoneUsageTodaySensor(coordinator, zone_id, zone),
-        ZoneUsageYesterdaySensor(coordinator, zone_id, zone),
     ]
+    
+    # Advanced/redundant energy sensors (only if show_advanced_entities is True)
+    if show_advanced_entities:
+        sensors.extend([
+            ZoneUsageTotalSensor(coordinator, zone_id, zone),
+            ZoneUsageTodaySensor(coordinator, zone_id, zone),
+            ZoneUsageYesterdaySensor(coordinator, zone_id, zone),
+        ])
+    
+    return sensors
 
 
 def _zone_stat_temperature(

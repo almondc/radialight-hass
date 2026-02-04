@@ -214,6 +214,48 @@ utility_meter:
 
 Add this to your `configuration.yaml` and restart Home Assistant to create daily/weekly/monthly reset meters.
 
+### Zone-Level Energy Sensors
+
+Each zone exposes two clean energy sensors by default:
+
+#### 1. Zone Energy Total (For Energy Dashboard)
+- **Entity**: `sensor.<zone>_energy_total`
+- **Type**: TOTAL_INCREASING (monotonically increasing)
+- **Unit**: kWh
+- **Purpose**: Canonical total energy for the Energy Dashboard and utility_meter integration
+- **Persistence**: Persisted per-zone across restarts via coordinator storage
+
+**To use in the Energy Dashboard:**
+1. Go to **Settings** → **Dashboards** → **Energy**
+2. Click **Add Consumption**
+3. Select `sensor.<zone>_energy_total` for each zone you want to track
+4. Save
+
+This is the recommended sensor for building daily/weekly/monthly rollups via `utility_meter`.
+
+#### 2. Zone Usage Last 24h (Matches Radialight App)
+- **Entity**: `sensor.<zone>_usage_last_24h`
+- **Type**: MEASUREMENT
+- **Unit**: kWh
+- **Purpose**: Rolling 24-hour consumption to match the Radialight mobile app display
+- **Update**: Refreshed whenever hourly usage data is polled from the API
+
+### Advanced Zone Energy Sensors (Optional)
+
+Three additional sensors are available but **disabled by default** to keep the UI clean:
+
+- **Zone Usage Total**: 7-day rolling total from API data (window-based, not monotonic)
+- **Zone Usage Today**: Current day's usage since midnight local time
+- **Zone Usage Yesterday**: Previous day's consumption
+
+**To enable these advanced sensors:**
+1. Go to **Settings** → **Devices & Services** → **Radialight Cloud** → **Options**
+2. Enable **Show Advanced Entities**
+3. Reload the integration or restart Home Assistant
+4. Go to **Settings** → **Entities** and enable the specific sensors you want
+
+These sensors are marked as disabled by default in the entity registry to avoid clutter; they are *not* created by the integration unless `Show Advanced Entities` is enabled in the options.
+
 ## Authentication & Token Handling
 
 The integration uses the **Firebase Secure Token refresh flow**:
@@ -246,6 +288,10 @@ Diagnostics are available via Home Assistant’s diagnostics panel and include s
 ⚠️ **API May Change**: The Radialight API is not officially documented. The underlying API may change without notice, which could break this integration. If the integration stops working, it may require an update.
 
 ⚠️ **Data Accuracy**: Energy values are calculated from API data and may not exactly match official Radialight app statistics due to rounding or data availability differences.
+
+## Entity Visibility Defaults
+
+Advanced entities are disabled by default. Enable them in Settings → Entities if needed.
 
 ### Known Limitations
 
