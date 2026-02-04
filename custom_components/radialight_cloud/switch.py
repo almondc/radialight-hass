@@ -103,7 +103,14 @@ class ProductLEDSwitch(CoordinatorEntity[RadialightCoordinator], SwitchEntity):
         """Turn LED on."""
         try:
             await self.api.async_set_product_light(self._product_id, True)
-            await self.coordinator.async_request_refresh()
+            try:
+                await self.coordinator.async_request_refresh()
+            except Exception as err:
+                _LOGGER.debug(
+                    "Coordinator refresh failed after LED on for product %s: %s",
+                    self._product_id,
+                    err,
+                )
         except RadialightError as err:
             raise HomeAssistantError(f"Failed to turn on LED: {err}") from err
 
@@ -111,6 +118,13 @@ class ProductLEDSwitch(CoordinatorEntity[RadialightCoordinator], SwitchEntity):
         """Turn LED off."""
         try:
             await self.api.async_set_product_light(self._product_id, False)
-            await self.coordinator.async_request_refresh()
+            try:
+                await self.coordinator.async_request_refresh()
+            except Exception as err:
+                _LOGGER.debug(
+                    "Coordinator refresh failed after LED off for product %s: %s",
+                    self._product_id,
+                    err,
+                )
         except RadialightError as err:
             raise HomeAssistantError(f"Failed to turn off LED: {err}") from err

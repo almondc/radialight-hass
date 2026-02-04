@@ -328,6 +328,7 @@ class ZoneAverageTemperatureSensor(BaseCoordinatorSensor):
 class ZoneMinTemperatureSensor(BaseCoordinatorSensor):
     """Zone minimum temperature across online products."""
 
+    _attr_entity_registry_enabled_default = False
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
@@ -344,6 +345,7 @@ class ZoneMinTemperatureSensor(BaseCoordinatorSensor):
 class ZoneMaxTemperatureSensor(BaseCoordinatorSensor):
     """Zone maximum temperature across online products."""
 
+    _attr_entity_registry_enabled_default = False
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
@@ -377,6 +379,7 @@ class ZoneOnlineCountSensor(BaseCoordinatorSensor):
 class ZoneOfflineCountSensor(BaseCoordinatorSensor):
     """Zone offline product count sensor."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Offline Products"
@@ -394,6 +397,7 @@ class ZoneOfflineCountSensor(BaseCoordinatorSensor):
 class ZoneModeSensor(BaseCoordinatorSensor):
     """Zone mode sensor (raw int)."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Mode"
@@ -408,6 +412,7 @@ class ZoneModeSensor(BaseCoordinatorSensor):
 class ZoneInfoModeSensor(BaseCoordinatorSensor):
     """Zone info mode sensor (raw int)."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Info Mode"
@@ -422,6 +427,7 @@ class ZoneInfoModeSensor(BaseCoordinatorSensor):
 class ZoneWindowSensor(BaseCoordinatorSensor):
     """Zone window setting (raw int)."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Window"
@@ -436,6 +442,7 @@ class ZoneWindowSensor(BaseCoordinatorSensor):
 class ZonePirSensor(BaseCoordinatorSensor):
     """Zone PIR setting (raw int)."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} PIR"
@@ -450,6 +457,7 @@ class ZonePirSensor(BaseCoordinatorSensor):
 class ZoneLockSensor(BaseCoordinatorSensor):
     """Zone lock setting (raw int)."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Lock"
@@ -502,6 +510,7 @@ class ZoneComfortTemperatureSensor(BaseCoordinatorSensor):
 class ZoneAlertCountSensor(BaseCoordinatorSensor):
     """Zone alert count sensor."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Alert Count"
@@ -519,6 +528,7 @@ class ZoneAlertCountSensor(BaseCoordinatorSensor):
 class ZoneUsageTotalSensor(BaseCoordinatorSensor):
     """Zone total usage for the last week window in kWh (MEASUREMENT state_class)."""
 
+    _attr_entity_registry_enabled_default = False
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -575,6 +585,7 @@ class ZoneUsageTotalSensor(BaseCoordinatorSensor):
 class ZoneUsageTodaySensor(BaseCoordinatorSensor):
     """Zone usage for today in kWh."""
 
+    _attr_entity_registry_enabled_default = False
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -607,6 +618,7 @@ class ZoneUsageTodaySensor(BaseCoordinatorSensor):
 class ZoneUsageYesterdaySensor(BaseCoordinatorSensor):
     """Zone usage for yesterday in kWh."""
 
+    _attr_entity_registry_enabled_default = False
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.MEASUREMENT
 

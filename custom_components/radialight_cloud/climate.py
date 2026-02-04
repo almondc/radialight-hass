@@ -224,7 +224,14 @@ class RadialightClimate(ClimateEntity):
             )
 
             # Update coordinator data with new zone state
-            await self.coordinator.async_request_refresh()
+            try:
+                await self.coordinator.async_request_refresh()
+            except Exception as err:
+                _LOGGER.debug(
+                    "Coordinator refresh failed after set temperature for zone %s: %s",
+                    self._zone_id,
+                    err,
+                )
 
         except RadialightError as err:
             raise HomeAssistantError(
@@ -275,7 +282,14 @@ class RadialightClimate(ClimateEntity):
                     zone.get("lock", 0),
                 )
 
-            await self.coordinator.async_request_refresh()
+            try:
+                await self.coordinator.async_request_refresh()
+            except Exception as err:
+                _LOGGER.debug(
+                    "Coordinator refresh failed after set preset for zone %s: %s",
+                    self._zone_id,
+                    err,
+                )
         except RadialightError as err:
             raise HomeAssistantError(
                 f"Failed to set preset for zone {self._zone_id}: {err}"

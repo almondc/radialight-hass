@@ -70,6 +70,7 @@ class BaseCoordinatorBinarySensor(
 class ZoneOverrideFlagBinarySensor(BaseCoordinatorBinarySensor):
     """Zone override flag binary sensor."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(
         self,
         coordinator: RadialightCoordinator,
@@ -118,6 +119,7 @@ class ZoneAnyWarmingBinarySensor(BaseCoordinatorBinarySensor):
 class ZoneAnyOverrideBinarySensor(BaseCoordinatorBinarySensor):
     """Zone any override binary sensor."""
 
+    _attr_entity_registry_enabled_default = False
     def __init__(self, coordinator: RadialightCoordinator, zone_id: str, zone: dict) -> None:
         super().__init__(coordinator, zone_id, zone)
         self._attr_name = f"{zone.get('name', 'Zone')} Any Override"
@@ -160,6 +162,8 @@ class ProductBinarySensor(
         self._attr_unique_id = f"{self._product_id}_{key}"
         if device_class:
             self._attr_device_class = device_class
+        if key == "isInOverride":
+            self._attr_entity_registry_enabled_default = False
 
     @property
     def available(self) -> bool:
