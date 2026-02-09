@@ -55,7 +55,7 @@ class RadialightCoordinator(DataUpdateCoordinator):
         self._accumulated_total_kwh: float = 0.0
         self._last_seen_usage_timestamp: Optional[datetime] = None
         
-        # Per-zone energy accumulators: {zone_id: {"total_kwh": float, "last_ts": datetime}}
+        # Per-zone energy accumulators: {zone_id: {"total_kwh": float, "bucket_last_values": {ts_iso: kwh}}}
         self._zone_energy_store = Store(hass, version=1, key="radialight_zone_energy_totals")
         self._zone_energy_totals: Dict[str, Dict[str, Any]] = {}
 
@@ -82,7 +82,17 @@ class RadialightCoordinator(DataUpdateCoordinator):
         try:
             zone_data = await self._zone_energy_store.async_load()
             if zone_data:
-                self._zone_energy_totals = zone_data
+                # Migration: last_ts -> bucket_last_values (no backfill)
+                migrated: Dict[str, Dict[str, Any]] = {}
+                for zone_id, data in zone_data.items():
+                    if "bucket_last_values" in data:
+                        migrated[zone_id] = data
+                    else:
+                        migrated[zone_id] = {
+                            "total_kwh": data.get("total_kwh", 0.0),
+                            "bucket_last_values": {},
+                        }
+                self._zone_energy_totals = migrated
                 _LOGGER.debug("Loaded per-zone energy storage: %d zones", len(self._zone_energy_totals))
         except Exception as err:
             _LOGGER.warning("Failed to load zone energy storage, starting fresh: %s", err)
@@ -104,17 +114,13 @@ class RadialightCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error("Failed to save account energy storage: %s", err)
         
-        # Save per-zone energy totals (convert datetimes to ISO strings)
+        # Save per-zone energy totals
         try:
             zone_data_to_save = {}
             for zone_id, data in self._zone_energy_totals.items():
                 zone_data_to_save[zone_id] = {
                     "total_kwh": data.get("total_kwh", 0.0),
-                    "last_ts": (
-                        data["last_ts"].isoformat()
-                        if isinstance(data.get("last_ts"), datetime)
-                        else data.get("last_ts")
-                    ),
+                    "bucket_last_values": data.get("bucket_last_values", {}),
                 }
             await self._zone_energy_store.async_save(zone_data_to_save)
         except Exception as err:
@@ -225,37 +231,47 @@ class RadialightCoordinator(DataUpdateCoordinator):
         
         # Fetch per-zone hourly usage (graceful failure)
         usage_by_zone = {}
+        debug_energy_added_by_zone: Dict[str, float] = {}
         try:
             for zone_id in zones_by_id.keys():
                 try:
                     # Fetch usage for this specific zone using zone_id parameter
-                    zone_usage_data = await self.api.get_usage(period="day", comparison=0, zone_id=zone_id)
+                    zone_usage_data = await self.api.get_usage(
+                        period="day", comparison=0, zone_id=zone_id
+                    )
                     zone_usage_points = _parse_usage_points(zone_usage_data)
-                    
+
                     if zone_usage_points:
                         # Cap to last 72 points to limit memory
-                        capped_points = zone_usage_points[-72:] if len(zone_usage_points) > 72 else zone_usage_points
-                        
+                        capped_points = (
+                            zone_usage_points[-72:]
+                            if len(zone_usage_points) > 72
+                            else zone_usage_points
+                        )
+
                         usage_by_zone[zone_id] = {
                             "points": capped_points,
                             "latest_ts": capped_points[-1][0] if capped_points else None,
                         }
-                        
+
                         _LOGGER.debug(
                             "Fetched %d hourly usage points for zone %s (capped to %d)",
                             len(zone_usage_points),
                             zone_id,
                             len(capped_points),
                         )
-                        
+
                         # Process new usage points for this zone
-                        await self._process_zone_usage_points(zone_id, capped_points)
+                        energy_added = await self._process_zone_usage_points(
+                            zone_id, capped_points
+                        )
+                        debug_energy_added_by_zone[zone_id] = energy_added
                     else:
                         # No points from this zone, preserve previous data if available
                         prev_data = (self.data or {}).get("usage_by_zone", {}).get(zone_id)
                         if prev_data:
                             usage_by_zone[zone_id] = prev_data
-                        
+
                 except RadialightError as err:
                     _LOGGER.debug("Failed to fetch usage for zone %s: %s", zone_id, err)
                     # Keep previous usage data for this zone if available
@@ -279,12 +295,29 @@ class RadialightCoordinator(DataUpdateCoordinator):
         for zone_id, zone_usage_data in usage_by_zone.items():
             if not zone_usage_data or not zone_usage_data.get("points"):
                 continue
-            
             # Rolling 24h
             usage_points_for_zone = zone_usage_data["points"]
             usage_24h_raw = _compute_usage_rolling(usage_points_for_zone, hours=24)
             if usage_24h_raw:
                 zone_usage_rolling_24h_kwh[zone_id] = self._convert_usage_to_kwh(usage_24h_raw)
+
+            # TODO: Remove debug instrumentation after validation (accumulator vs buckets)
+            energy_added = debug_energy_added_by_zone.get(zone_id, 0.0)
+            _LOGGER.debug(
+                "Zone %s accumulator debug: delta_added_this_update=%.4f kWh, last24h_kwh=%s, total_kwh=%s",
+                zone_id,
+                energy_added,
+                (
+                    f"{zone_usage_rolling_24h_kwh.get(zone_id):.4f}"
+                    if zone_id in zone_usage_rolling_24h_kwh
+                    else None
+                ),
+                (
+                    f"{self._zone_energy_totals.get(zone_id, {}).get('total_kwh', 0.0):.4f}"
+                    if zone_id in self._zone_energy_totals
+                    else None
+                ),
+            )
 
         # Calculate usage statistics in kWh
         usage_last_hour_kwh = None
@@ -360,40 +393,12 @@ class RadialightCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("No new usage points to process")
             return
         
-        # Add new energy to total
-        energy_added = 0.0
-        for ts, raw_val in new_points:
-            kwh = self._convert_usage_to_kwh(raw_val)
-            energy_added += kwh
-        
-        old_total = self._accumulated_total_kwh
-        self._accumulated_total_kwh += energy_added
-        
-        # Safety: never decrease total (clamp)
-        if self._accumulated_total_kwh < old_total:
-            _LOGGER.warning(
-                "Energy total would decrease (%.3f -> %.3f), clamping to previous",
-                old_total,
-                self._accumulated_total_kwh,
-            )
-            self._accumulated_total_kwh = old_total
-        
-        # Update last seen timestamp to newest point
-        self._last_seen_usage_timestamp = new_points[-1][0]
-        
-        _LOGGER.debug(
-            "Processed %d new usage points, added %.3f kWh, total now %.3f kWh",
-            len(new_points),
-            energy_added,
-            self._accumulated_total_kwh,
-        )
-        
         # Save to storage
         await self._async_save_energy_storage()
 
     async def _process_zone_usage_points(
         self, zone_id: str, usage_points: List[Tuple[datetime, float]]
-    ) -> None:
+    ) -> float:
         """Process new usage points for a zone and update zone energy total.
         
         Args:
@@ -401,54 +406,44 @@ class RadialightCoordinator(DataUpdateCoordinator):
             usage_points: List of (timestamp, raw_usage) tuples.
         """
         if not usage_points:
-            return
+            return 0.0
         
         # Get or initialize zone energy data
         if zone_id not in self._zone_energy_totals:
             self._zone_energy_totals[zone_id] = {
                 "total_kwh": 0.0,
-                "last_ts": None,
+                "bucket_last_values": {},
             }
-        
+
         zone_data = self._zone_energy_totals[zone_id]
-        
-        # Convert last_ts from ISO string back to datetime if needed
-        last_ts = zone_data.get("last_ts")
-        if isinstance(last_ts, str):
-            last_ts = dt_util.parse_datetime(last_ts)
-            zone_data["last_ts"] = last_ts
-        
-        # If first run for this zone, initialize without adding to total
-        if last_ts is None:
-            zone_data["last_ts"] = usage_points[-1][0]
-            zone_data["total_kwh"] = 0.0
-            _LOGGER.debug(
-                "Initializing zone %s energy tracking at %s",
-                zone_id,
-                zone_data["last_ts"],
-            )
-            return
-        
-        # Find new points (timestamps after last_ts)
-        new_points = [
-            (ts, raw_val)
-            for ts, raw_val in usage_points
-            if ts > last_ts
-        ]
-        
-        if not new_points:
-            _LOGGER.debug("No new usage points for zone %s", zone_id)
-            return
-        
-        # Add new energy to zone total
+        bucket_last_values: Dict[str, float] = zone_data.get("bucket_last_values", {})
+
+        # Accumulate deltas per bucket timestamp
         energy_added = 0.0
-        for ts, raw_val in new_points:
+        for ts, raw_val in usage_points:
+            ts_iso = ts.isoformat()
             kwh = self._convert_usage_to_kwh(raw_val)
-            energy_added += kwh
-        
+            prev = bucket_last_values.get(ts_iso)
+            if prev is None:
+                delta = kwh
+            else:
+                delta = max(0.0, kwh - prev)
+                if kwh > prev:
+                    # TODO: Remove debug instrumentation after validation (bucket increases)
+                    _LOGGER.debug(
+                        "BUCKET INCREASE zone=%s ts=%s prev=%.4f now=%.4f delta=%.4f",
+                        zone_id,
+                        ts_iso,
+                        prev,
+                        kwh,
+                        delta,
+                    )
+            energy_added += delta
+            bucket_last_values[ts_iso] = kwh
+
         old_total = zone_data["total_kwh"]
         zone_data["total_kwh"] += energy_added
-        
+
         # Safety: never decrease total (clamp)
         if zone_data["total_kwh"] < old_total:
             _LOGGER.warning(
@@ -458,17 +453,24 @@ class RadialightCoordinator(DataUpdateCoordinator):
                 zone_data["total_kwh"],
             )
             zone_data["total_kwh"] = old_total
-        
-        # Update last seen timestamp to newest point
-        zone_data["last_ts"] = new_points[-1][0]
-        
+
+        # Prune buckets to last 48 hours
+        cutoff = dt_util.utcnow() - timedelta(hours=48)
+        pruned: Dict[str, float] = {}
+        for ts_iso, val in bucket_last_values.items():
+            ts_dt = dt_util.parse_datetime(ts_iso)
+            if ts_dt is None or ts_dt >= cutoff:
+                pruned[ts_iso] = val
+        zone_data["bucket_last_values"] = pruned
+
         _LOGGER.debug(
-            "Zone %s: processed %d new usage points, added %.3f kWh, total now %.3f kWh",
+            "Zone %s: processed %d usage points, added %.4f kWh, total now %.4f kWh",
             zone_id,
-            len(new_points),
+            len(usage_points),
             energy_added,
             zone_data["total_kwh"],
         )
+        return energy_added
 
     async def _jitter_sleep(self) -> None:
         """Sleep a small random jitter to avoid stampedes."""
